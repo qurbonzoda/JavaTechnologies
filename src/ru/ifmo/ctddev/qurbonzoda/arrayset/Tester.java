@@ -1,9 +1,6 @@
 package ru.ifmo.ctddev.qurbonzoda.arrayset;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * Created by qurbonzoda on 22.02.16.
@@ -19,6 +16,7 @@ public class Tester {
         set.add(4);
 
         ArraySet<Integer> arraySet = new ArraySet<Integer>(set);
+        ArraySet<Integer> mySet = new ArraySet<Integer>();
 
         System.out.println(arraySet);
         System.out.println(arraySet.headSet(3));
