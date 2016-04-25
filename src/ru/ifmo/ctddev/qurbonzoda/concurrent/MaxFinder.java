@@ -39,14 +39,7 @@ public class MaxFinder<T> implements Runnable {
      */
     @Override
     public void run() {
-        // result = list.stream().max(comparator);
-        for (T element : list) {
-            if (result == null) {
-                result = element;
-            } else if (comparator.compare(result, element) < 0) {
-                result = element;
-            }
-        }
+        result = list.stream().max(comparator).get();
     }
 
     /**

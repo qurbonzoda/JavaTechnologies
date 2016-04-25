@@ -1,0 +1,7 @@
+rm -rf bin
+mkdir bin
+cp out/production/JavaTechnologies/ru bin -r
+cp src/META-INF/ bin -r
+cp /home/qurbonzoda/Programming/ideaProjects/java-advanced-2016/artifacts/ImplementorTest.jar bin -r
+cd bin
+jar cfm Implementor.jar META-INF/MANIFEST.MF ru

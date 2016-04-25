@@ -1,13 +1,19 @@
-package ru.ifmo.ctddev.qurbonzoda.concurrent;
+package ru.ifmo.ctddev.qurbonzoda.mapper;
 
 import info.kgeorgiy.java.advanced.concurrent.ScalarIP;
-import javafx.util.Pair;
+import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
+import ru.ifmo.ctddev.qurbonzoda.concurrent.AnyMatchChecker;
+import ru.ifmo.ctddev.qurbonzoda.concurrent.MaxFinder;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static ru.ifmo.ctddev.qurbonzoda.concurrent.IterativeParallelism.dealWithThreads;
+import static ru.ifmo.ctddev.qurbonzoda.concurrent.IterativeParallelism.getRanges;
 
 /**
  * This class has has several methods to process array on several threads
@@ -18,6 +24,11 @@ import java.util.stream.Collectors;
  */
 public class IterativeParallelism implements ScalarIP {
 
+    private ParallelMapper mapper;
+
+    public IterativeParallelism(ParallelMapper mapper) {
+        this.mapper = mapper;
+    }
     /**
      * This method is used to find maximum element in the list using several threads using the given comparator
      *
@@ -32,11 +43,16 @@ public class IterativeParallelism implements ScalarIP {
             throws InterruptedException {
         List< List<? extends T> > rangeList = getRanges(list, Math.min(threads, list.size()));
 
-        List<MaxFinder<T>> runnableList = new ArrayList<>(rangeList.size());
-        rangeList.forEach(range -> runnableList.add(new MaxFinder<T>(range, comparator)));
+        if (mapper != null) {
+            Function<List<? extends T>, T> maxFunction = values -> values.stream().max(comparator).get();
+            return maxFunction.apply(mapper.map(maxFunction, rangeList));
+        } else {
+            List<MaxFinder<T>> runnableList = rangeList.stream().map(x -> new MaxFinder<T>(x, comparator))
+                    .collect(Collectors.toList());
 
-        dealWithThreads(runnableList);
-        return runnableList.stream().map(MaxFinder::getResult).max(comparator).get();
+            dealWithThreads(runnableList);
+            return runnableList.stream().map(MaxFinder::getResult).max(comparator).get();
+        }
     }
 
     /**
@@ -86,41 +102,17 @@ public class IterativeParallelism implements ScalarIP {
     @Override
     public <T> boolean any(int threads, List<? extends T> list, Predicate<? super T> predicate)
             throws InterruptedException {
-        List<List<? extends T>> rangeList = getRanges(list, threads);
+        List< List<? extends T> > rangeList = getRanges(list, threads);
+        if (mapper != null) {
+            Function<List<? extends T>, Boolean> anyFunction = values -> values.stream().anyMatch(predicate);
+            return mapper.map(anyFunction, rangeList).contains(Boolean.TRUE);
+        } else {
+            List<AnyMatchChecker<T>> runnableList = rangeList.stream().map(x -> new AnyMatchChecker<T>(x, predicate))
+                    .collect(Collectors.toList());
 
-        List<AnyMatchChecker<T>> runnableList = new ArrayList<>(rangeList.size());
-        rangeList.forEach(range -> runnableList.add(new AnyMatchChecker<T>(range, predicate)));
-
-        dealWithThreads(runnableList);
-        return runnableList.stream().map(AnyMatchChecker::getResult).anyMatch(Predicate.isEqual(true));
-
-    }
-
-    public static  <T> List< List<? extends T> > getRanges(List<? extends T> list, int ranges) {
-        int elementsLeft = list.size();
-        List<List<? extends T>> rangeList = new ArrayList<>();
-        int leftIndex = 0;
-        while (ranges > 0) {
-            int rightIndex = leftIndex + elementsLeft / ranges;
-            rangeList.add(list.subList(leftIndex, rightIndex));
-
-            elementsLeft -= rightIndex - leftIndex;
-            leftIndex = rightIndex;
-            ranges--;
-        }
-        return rangeList;
-    }
-
-    public static <T> void dealWithThreads(List<? extends Runnable> runnableList) throws InterruptedException {
-        List<Thread> threadList = new ArrayList<>();
-        runnableList.forEach(runnable -> threadList.add(new Thread(runnable)));
-        for (Runnable runnable : runnableList) {
-            Thread currentThread = new Thread(runnable);
-            threadList.add(currentThread);
-            currentThread.start();
-        }
-        for (Thread thread : threadList) {
-            thread.join();
+            dealWithThreads(runnableList);
+            return runnableList.stream().map(AnyMatchChecker::getResult).anyMatch(Predicate.isEqual(true));
         }
     }
+
 }

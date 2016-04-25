@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Created-By: Qurbonzoda Abduqodir
+Class-Path: ImplementorTest.jar
+Main-Class: ru/ifmo/ctddev/qurbonzoda/implementor/Implementor

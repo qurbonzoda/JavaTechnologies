@@ -35,13 +35,7 @@ public class AnyMatchChecker<T> implements Runnable {
      */
     @Override
     public void run() {
-        // result = list.stream().anyMatch(predicate);
-        for (T element : list) {
-            if (predicate.test(element)) {
-                result = true;
-                return;
-            }
-        }
+        result = list.stream().anyMatch(predicate);
     }
 
     /**
